@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공연 피해가세요</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 동네 안내문처럼 차분하고 크게 – 어르신이 한눈에 읽는 생활 정보 (주색: 진한 남색)
+   IDEA: 일기예보 판 – 날씨 대신 '역 혼잡'을 시간별로 예보한다
+   PICTURE: 달력 + 시간별 혼잡 예보 띠 (실제로 동작하는 화면이 곧 그림)
+   COLOUR/TYPE: 5호선 보라 주색, 흰 바탕, 상태색(보통·혼잡·매우 혼잡)은 아이콘+글자와 함께 / Noto Sans KR
+   LAYOUT: 상단 예보 도구 → 알림 신청 → 기관용 → 분석 근거 */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#10141c);--ink:light-dark(#161b26,#eef1f6);--ink2:light-dark(#545c6b,#aeb6c4);
+--line:light-dark(#e1e5ec,#283041);--soft:light-dark(#f3f5f9,#181e2a);
+--pur:light-dark(#1c2f5a,#8fb0e6);--pur-d:light-dark(#14223f,#c9d8f2);--pur-bg:light-dark(#e6ecf5,#1a2436);
+--ok:light-dark(#1f7a55,#5ccf9c);--ok-bg:light-dark(#e3f4ec,#173327);
+--busy:light-dark(#9a6400,#f2b84b);--busy-bg:light-dark(#fff1d6,#3a2a0f);
+--very:light-dark(#c62828,#ff7b72);--very-bg:light-dark(#fde3e1,#3d1716)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+body.big{font-size:20px}
+h1,h2,h3{line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:clamp(26px,3.4vw,36px);font-weight:900}
+h3{font-size:1.15em;font-weight:700}
+.band{padding:clamp(28px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+.muted{color:var(--ink2)}.small{font-size:.82em}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--pur);outline-offset:2px}
+/* top bar */
+.top{position:sticky;top:0;z-index:5;background:var(--pur);color:#fff}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:10px max(5vw,16px)}
+.brand{font-weight:900;font-size:1.25em;margin-right:auto;color:#fff;text-decoration:none}
+.brand span{font-weight:500;font-size:.68em;opacity:.85;margin-left:8px}
+.top nav{display:flex;flex-wrap:wrap;gap:4px}
+.top nav a{color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:500}
+.top nav a:hover{background:rgba(255,255,255,.15)}
+.bigbtn{background:#fff;color:var(--pur-d);border:0;border-radius:999px;padding:8px 14px;font-weight:700;min-height:40px}
+:root[data-theme=dark] .bigbtn{color:#14223f}
+/* hero */
+.hero{background:linear-gradient(var(--pur-bg),var(--bg))}
+.hero h1{font-size:clamp(30px,4.4vw,48px);font-weight:900;margin-bottom:6px}
+.lead{max-width:62ch;margin:0 0 22px}
+.tool{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px;align-items:start}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:18px}
+/* calendar */
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.nav{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--soft);font-size:1.3em;font-weight:700;color:var(--pur-d)}
+.nav:disabled{opacity:.35;cursor:default}
+.pick{margin:2px 0 10px;font-size:1.05em;font-weight:700;color:var(--pur-d)}
+.shows{margin:0 0 6px;padding-left:18px;font-size:.88em;color:var(--ink2)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.cal .dow{font-size:.78em;color:var(--ink2);padding:4px 0}
+.cal .dow.sun{color:var(--very)}.cal .dow.sat{color:var(--pur)}
+.day{border:1px solid transparent;border-radius:10px;background:var(--soft);min-height:52px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.day b{font-size:1em}
+.day i{font-style:normal;font-size:.62em;font-weight:700;padding:1px 5px;border-radius:6px}
+.day.big i{background:var(--pur);color:#fff}
+.day.mid i{background:var(--pur-bg);color:var(--pur-d)}
+.day[aria-pressed=true]{border-color:var(--pur);box-shadow:0 0 0 2px var(--pur) inset;background:var(--bg)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:.8em;color:var(--ink2)}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.legend .l1::before{background:var(--pur)}.legend .l2::before{background:var(--pur-bg);border:1px solid var(--pur)}.legend .l3::before{background:repeating-linear-gradient(45deg,var(--line) 0 3px,transparent 3px 6px);border:1px dashed var(--ink2)}
+.day.nod{background:repeating-linear-gradient(45deg,var(--line) 0 3px,transparent 3px 7px);border:1px dashed var(--ink2)}
+.day.nod i{background:transparent;color:var(--ink2)}
+/* forecast */
+.fc-title{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin-bottom:6px}
+.fc-title h3{font-size:1.5em;font-weight:900}
+.tag{display:inline-block;font-size:.8em;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--pur-bg);color:var(--pur-d)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 14px}
+select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg)}
+.strip{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}
+.hr{border-radius:8px;padding:10px 0 8px;text-align:center;font-weight:700;font-size:.92em;line-height:1.3}
+.hr small{display:block;font-weight:500;font-size:.78em;opacity:.9;white-space:nowrap}
+.g0{background:var(--ok-bg);color:var(--ok)}.g1{background:var(--busy-bg);color:var(--busy)}.g2{background:var(--very-bg);color:var(--very)}
+.keys{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0 0;font-size:.85em}
+.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.box{border-radius:12px;padding:14px;background:var(--soft)}
+.box h4{margin:0 0 4px;font-size:.88em;color:var(--ink2);font-weight:500}
+.box p{margin:0;font-size:1.18em;font-weight:700}
+.box.avoid p{color:var(--very)}.box.go p{color:var(--ok)}
+.alts{margin-top:14px}
+.alt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:8px 0}
+.alt{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.alt b{display:block}
+.line{display:inline-block;font-size:.72em;font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;margin-right:3px}
+.L3{background:#ef7c1c}.L5{background:#996cac}.L8{background:#e6186c}.L9{background:#bdb092;color:#2a2410}
+.tip{border-left:4px solid var(--pur);padding:8px 12px;background:var(--pur-bg);border-radius:0 10px 10px 0;margin-top:10px}
+.sms{margin-top:16px}
+.bubble{background:var(--soft);border-radius:16px 16px 16px 4px;padding:14px 16px;white-space:pre-line;font-size:.95em;max-width:520px}
+.btn{border:0;border-radius:12px;background:var(--pur);color:#fff;font-weight:700;padding:12px 18px;min-height:48px}
+.btn.ghost{background:transparent;color:var(--pur-d);border:1.5px solid var(--pur)}
+.note{font-size:.8em;color:var(--ink2);margin-top:10px}
+/* form */
+.sep{background:var(--soft);border-top:6px solid var(--pur);margin-top:clamp(20px,3vw,40px)}
+.eyebrow{margin:0 0 6px;font-weight:700;color:var(--pur)}
+.sep .form,.sep .done{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,3vw,28px)}
+.form{max-width:640px;display:grid;gap:18px}
+.f label,.f legend{display:block;font-weight:700;margin-bottom:6px}
+.f input[type=tel],.f input[type=text]{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg);font-size:16px}
+fieldset{border:0;padding:0;margin:0}
+.choice{display:flex;flex-wrap:wrap;gap:8px}
+.choice label{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:48px;font-weight:500;margin:0}
+.choice input{width:20px;height:20px;accent-color:var(--pur)}
+.proxy{display:none;gap:12px;padding:14px;border-radius:12px;background:var(--soft)}
+.proxy.on{display:grid}
+.agree{border:1px solid var(--line);border-radius:12px;padding:14px}
+.agree summary{cursor:pointer;color:var(--pur-d);font-weight:500}
+.agree ul{margin:8px 0 0;padding-left:20px;font-size:.88em}
+.err{color:var(--very);font-weight:700;font-size:.9em;min-height:1.4em}
+.done{display:none;border:2px solid var(--ok);border-radius:16px;padding:18px;max-width:640px}
+.done.on{display:block}
+/* agency */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.tile{background:var(--soft);border-radius:14px;padding:14px 16px}
+.tile b{display:block;font-size:clamp(26px,3vw,34px);font-weight:900;color:var(--pur-d);line-height:1.1}
+table{width:100%;border-collapse:collapse;font-size:.92em}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.85em;color:var(--ink2);font-weight:500}
+td.nw{white-space:nowrap}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.82em;font-weight:700}
+/* evidence */
+.ev{background:var(--soft)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.fact{background:var(--bg);border-radius:14px;padding:16px}
+.fact b{display:block;font-size:clamp(28px,3.4vw,40px);font-weight:900;color:var(--pur-d);line-height:1.1;margin-bottom:6px}
+.src{font-size:.82em;color:var(--ink2)}
+.src li{margin:3px 0}
+footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
+@media(max-width:860px){.tool{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){
+ .strip{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .sum,.tiles,.facts{grid-template-columns:minmax(0,1fr)}
+ .top nav{width:100%}
+ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:6.5em;margin-inline-start:-7em;color:var(--ink2)}
+}
+@media(prefers-reduced-motion:no-preference){.day,.hr{transition:background .2s,border-color .2s}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#forecast">공연 피해가세요<span>올림픽공원 주변 외출 예보</span></a>
+  <nav aria-label="메뉴"><a href="#forecast">혼잡 예보</a><a href="#signup">알림 신청</a><a href="#agency">기관용</a><a href="#about">분석 근거</a></nav>
+  <button class="bigbtn" id="bigBtn" aria-pressed="false">글자 크게</button>
+</div></header>
+
+<section class="band hero" id="forecast"><div class="wrap">
+  <h1>공연이 열리는 날에는 사람이 많아요</h1>
+  <p class="lead muted">큰 공연이 있으면 붐벼서 다니기 힘들어요.<br>송파구 거주 어르신께서 덜 붐비는 시간과 역을 미리 아실 수 있도록 알려드려요.</p>
+  <div class="tool">
+    <div class="card" aria-label="공연 달력">
+      <div class="cal-head"><button class="nav" id="prevM" aria-label="이전 달">‹</button><h3 id="calTitle"></h3><button class="nav" id="nextM" aria-label="다음 달">›</button></div><p class="pick">날짜를 누르세요</p>
+      <div class="cal" id="cal"></div>
+      <div class="legend"><span class="l1">대형 공연(1만 명 이상)</span><span class="l2">중소형 공연</span><span class="l3">자료 없음</span></div>
+      <p class="note">2025년 실제 공연 일정(한국체육산업개발 공연·관람객 데이터)으로 시연합니다. 실제 서비스에서는 다가오는 공연 일정을 연동합니다.</p>
+    </div>
+    <div class="card" aria-live="polite">
+      <div class="fc-title"><h3 id="fcDate"></h3><span class="tag" id="fcShow"></span></div><ul class="shows" id="fcNames"></ul>
+      <div class="row"><label for="stSel" class="small">이용하는 역</label><select id="stSel"></select></div>
+      <div class="strip" id="strip" role="list" aria-label="시간대별 혼잡 예보"></div>
+      <div class="keys"><span class="pill g0">보통</span><span class="pill g1">혼잡</span><span class="pill g2">매우 혼잡</span><span class="muted small">이 역의 1년 중 붐비는 정도 기준</span></div>
+      <div class="sum">
+        <div class="box avoid"><h4>이 시간은 피하세요</h4><p id="avoid"></p></div>
+        <div class="box go"><h4>다니기 좋은 시간</h4><p id="go"></p></div>
+      </div>
+      <p class="note" id="commute"></p>
+      <div class="alts" id="alts"></div>
+      <div class="sms"><h3>이렇게 문자로 알려드려요</h3><p class="small muted">공연 전날 오후 · 당일 아침 2번</p>
+        <div class="bubble" id="bubble"></div>
+        <div class="row"><button class="btn ghost" id="copyBtn">문구 복사</button><a class="btn" href="#signup" style="text-decoration:none;display:inline-flex;align-items:center">알림 신청하기</a></div>
+      </div>
+      <p class="note">※ 등급은 2025년 서울교통공사 승하차 데이터로 같은 요일·같은 공연 규모 날의 평균을 계산한 예보입니다.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="band sep" id="signup"><div class="wrap">
+  <p class="eyebrow">알림 서비스</p>
+  <h2>문자·카카오톡 알림 신청</h2>
+  <p class="lead muted">앱을 설치하지 않아도 됩니다. 가족이나 복지관 담당자가 대신 신청할 수도 있어요.</p>
+  <form class="form" id="form" novalidate>
+    <fieldset class="f"><legend>누가 신청하시나요?</legend>
+      <div class="choice"><label><input type="radio" name="who" value="self" checked> 본인</label><label><input type="radio" name="who" value="family"> 가족이 대신</label><label><input type="radio" name="who" value="agency"> 복지관·주민센터 담당자</label></div>
+    </fieldset>
+    <div class="proxy f" id="proxy">
+      <div><label for="pName">신청하시는 분 이름</label><input type="text" id="pName" autocomplete="name"></div>
+      <div><label for="pRel" id="pRelL">관계</label><input type="text" id="pRel" placeholder="예: 아들, ○○종합사회복지관"></div>
+    </div>
+    <div class="f"><label for="phone">알림 받으실 분 휴대폰 번호</label><input type="tel" id="phone" inputmode="numeric" placeholder="010-0000-0000" autocomplete="tel"></div>
+    <fieldset class="f"><legend>받는 방법</legend>
+      <div class="choice"><label><input type="radio" name="ch" value="문자" checked> 문자 메시지</label><label><input type="radio" name="ch" value="카카오톡"> 카카오톡</label></div>
+    </fieldset>
+    <div class="f"><label for="myStation">주로 이용하는 역</label><select id="myStation"></select></div>
+    <fieldset class="f"><legend>알림 받을 때</legend>
+      <div class="choice"><label><input type="checkbox" name="when" value="전날 오후" checked> 공연 전날 오후</label><label><input type="checkbox" name="when" value="당일 아침" checked> 공연 당일 아침</label></div>
+    </fieldset>
+    <div class="agree">
+      <label style="display:flex;gap:10px;align-items:flex-start;font-weight:700"><input type="checkbox" id="agree" style="width:22px;height:22px;accent-color:var(--pur)"> 개인정보 수집·이용에 동의합니다 (필수)</label>
+      <details><summary>자세히 보기</summary><ul>
+        <li>수집 항목: 휴대폰 번호, 주로 이용하는 역, (대리 신청 시) 신청인 이름·관계</li>
+        <li>이용 목적: 올림픽공원 공연일 혼잡 예보 알림 발송</li>
+        <li>보유 기간: 알림 해지 시 즉시 삭제</li>
+        <li>동의하지 않으실 수 있으며, 이 경우 알림을 받으실 수 없습니다.</li></ul></details>
+    </div>
+    <div class="err" id="err" role="alert"></div>
+    <button class="btn" type="submit">알림 신청하기</button>
+  </form>
+  <div class="done" id="done" role="status"><h3>신청이 접수되었습니다</h3><p id="doneTxt"></p><p class="note">시연 화면입니다. 입력하신 정보는 저장되거나 발송되지 않습니다.</p></div>
+</div></section>
+
+<section class="band" id="agency" style="background:var(--pur-bg)"><div class="wrap">
+  <h2>기관용 혼잡 예보 대시보드 <span class="muted" id="agMonth" style="font-size:.6em;font-weight:500"></span></h2>
+  <p class="lead muted">복지관·주민센터·장애인콜택시 운영 측이 이동지원 차량 배치와 방문 일정을 미리 조정할 수 있도록 공연일 혼잡을 한눈에 보여줍니다.</p>
+  <div class="tiles" id="tiles"></div>
+  <div class="card scroll"><table class="stack" id="agTable"><thead><tr><th>날짜</th><th>공연</th><th>올림픽공원역 매우 혼잡</th><th>권장 조치</th></tr></thead><tbody></tbody></table></div>
+  <p class="note">대리 등록은 위 알림 신청에서 "복지관·주민센터 담당자"를 선택해 진행합니다.</p>
+</div></section>
+
+<section class="band ev" id="about"><div class="wrap">
+  <h2>왜 이 서비스가 필요한가요</h2>
+  <p class="lead muted">2025년 올림픽공원 공연 데이터와 서울교통공사 승하차 데이터를 분석한 결과입니다.</p>
+  <div class="facts">
+    <div class="fact"><b>98일 중 97일</b>2025년 토·일요일 중 연계 데이터에 기록이 있는 98일 가운데 공연이 열린 날. 주변 주민은 거의 매 주말 혼잡을 겪습니다.</div>
+    <div class="fact"><b>2.2~2.3배</b>공연 있는 금요일 밤 10~11시 올림픽공원역(5호선) 이용객, 평소 금요일 대비.</div>
+    <div class="fact"><b>−13% / −12%</b>9호선 올림픽공원역 무임권(어르신·장애인 등) 이용객 변화. 공연 있는 금요일(평소 금요일 대비), 주말 대형 공연일(중소형 공연일 대비). 붐비는 날 교통약자의 이동이 줄었습니다.</div>
+  </div>
+  <h3>혼잡 등급 기준</h3>
+  <p class="small muted">역마다 2025년 6~23시 시간당 승하차 인원을 줄 세워, 상위 25% 이상은 혼잡, 상위 10% 이상은 매우 혼잡으로 정했습니다.</p>
+  <div class="card scroll" style="margin:10px 0 18px"><table id="thTable"><thead><tr><th>역</th><th style="text-align:right">혼잡 (시간당)</th><th style="text-align:right">매우 혼잡 (시간당)</th><th style="text-align:right">엘리베이터</th></tr></thead><tbody></tbody></table></div>
+  <h3>사용한 데이터</h3>
+  <ul class="src">
+    <li>한국체육산업개발(주) 올림픽공원 차량입출차·공연·날씨 연계 데이터 (2025)</li>
+    <li>서울교통공사 1~8호선 역별 일별 시간대별 승객유형별 승하차인원 (2025)</li>
+    <li>서울교통공사 역별 일별 시간대별 노인 승하차인원 (2025)</li>
+    <li>9호선 2·3단계 역별 일별 승객유형별 승하차인원 (2025)</li>
+    <li>서울시 지하철역 엘리베이터 위치정보</li>
+  </ul>
+  <p class="small muted">한계: 역 승하차 기준이라 열차 안 혼잡은 반영하지 않습니다. 역 간 거리는 직선거리입니다. 버스 정보는 추후 추가 예정입니다.</p>
+</div></section>
+<footer>공연 피해가세요 · 공공데이터 활용 공모전 출품작 · 알림 신청은 시연용입니다</footer>
+
+<script>
+{
+const D = {"hours": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "thresholds": {"둔촌동": [1598, 2534], "몽촌토성(평화의문)": [1001, 1363], "방이": [962, 1384], "오금": [1179, 2285], "올림픽공원(한국체대)": [722, 974]}, "forecast": {"둔촌동": {"금요일": {"대형": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "중소형": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"]}, "주말": {"대형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"], "없음": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}, "평일": {"대형": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}}, "몽촌토성(평화의문)": {"금요일": {"대형": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"]}, "주말": {"대형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"], "없음": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "매우 혼잡", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}, "평일": {"대형": ["보통", "혼잡", "매우 혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "보통", "보통", "보통", "보통", "보통"]}}, "방이": {"금요일": {"대형": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "중소형": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"]}, "주말": {"대형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"], "없음": ["보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "혼잡", "혼잡", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}, "평일": {"대형": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}}, "오금": {"금요일": {"대형": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "혼잡", "보통", "보통", "보통", "보통"]}, "주말": {"대형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"], "없음": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}, "평일": {"대형": ["보통", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "없음": ["보통", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "혼잡", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}}, "올림픽공원(한국체대)": {"금요일": {"대형": ["보통", "혼잡", "혼잡", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "매우 혼잡", "매우 혼잡", "매우 혼잡", "매우 혼잡", "보통", "보통", "보통", "매우 혼잡", "혼잡"], "없음": ["보통", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "매우 혼잡", "매우 혼잡", "보통", "보통", "보통", "혼잡", "보통"]}, "주말": {"대형": ["보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "매우 혼잡", "혼잡", "혼잡", "보통", "보통", "매우 혼잡", "혼잡", "보통", "보통"], "없음": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "매우 혼잡", "매우 혼잡", "보통", "보통", "매우 혼잡", "매우 혼잡", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "혼잡", "혼잡", "혼잡", "보통", "보통", "혼잡", "혼잡", "보통", "보통"]}, "평일": {"대형": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "매우 혼잡", "매우 혼잡", "혼잡", "보통", "보통", "매우 혼잡", "보통"], "없음": ["보통", "혼잡", "매우 혼잡", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "혼잡", "혼잡", "보통", "보통", "보통", "보통", "보통"], "중소형": ["보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통", "보통"]}}}};
+const ST = {"올림픽공원(한국체대)":{n:"올림픽공원",L:[5,9],e:3,km:0},"방이":{n:"방이",L:[5],e:2,km:0.9},"둔촌동":{n:"둔촌동",L:[5],e:1,km:1.4},"오금":{n:"오금",L:[3,5],e:2,km:1.6},"몽촌토성(평화의문)":{n:"몽촌토성(평화의문)",L:[8],e:1,km:1.7}};
+const HOME = "올림픽공원(한국체대)";
+const SCH = {"2025-01-01":["중소형",["김희재 콘서트 HEERE WE GO"]],"2025-01-04":["중소형",["김희재 콘서트 HEERE WE GO"]],"2025-01-05":["중소형",["김희재 콘서트 HEERE WE GO"]],"2025-01-10":["중소형",["나훈아 2024 고마웠습니다-라스트 콘서트(LAST CONCERT)"]],"2025-01-11":["중소형",["나훈아 2024 고마웠습니다-라스트 콘서트(LAST CONCERT)"]],"2025-01-12":["대형",["나훈아 2024 고마웠습니다-라스트 콘서트(LAST CONCERT)","벤슨 분 첫 단독 내한공연"]],"2025-01-17":["중소형",["GFRIEND 10th Anniversary < Season of Memories >, I.M WORLD TOUR 〈Off The Beat〉 FINAL IN SEOUL"]],"2025-01-18":["대형",["2025 DAVICHI CONCERT 〈A Stitch in Time〉","GFRIEND 10th Anniversary < Season of Memories >, I.M WORLD TOUR 〈Off The Beat〉 FINAL IN SEOUL"]],"2025-01-19":["대형",["GFRIEND 10th Anniversary < Season of Memories >, I.M WORLD TOUR 〈Off The Beat〉 FINAL IN SEOUL","2025 DAVICHI CONCERT 〈A Stitch in Time〉"]],"2025-01-25":["대형",["2025 BABYMONSTER 1st WORLD TOUR 〈HELLO MONSTERS〉 IN SEOUL","2025 SUHO CONCERT 〈SU:HOMME〉 ENCORE","터치드(TOUCHED) 단독 콘서트 HIGHLIGHT Ⅲ"]],"2025-01-26":["대형",["2025 BABYMONSTER 1st WORLD TOUR 〈HELLO MONSTERS〉 IN SEOUL","2025 SUHO CONCERT 〈SU:HOMME〉 ENCORE","터치드(TOUCHED) 단독 콘서트 HIGHLIGHT Ⅲ"]],"2025-01-31":["중소형",["THE BOYZ FAN-CON 〈THE B LAND〉"]],"2025-02-01":["중소형",["THE BOYZ FAN-CON 〈THE B LAND〉"]],"2025-02-02":["중소형",["THE BOYZ FAN-CON 〈THE B LAND〉"]],"2025-02-07":["중소형",["2025 LEECHANGSUB SOLO CONCERT 〈The Wayfarer〉 ENCORE","2025 검정치마 단독공연 SONGS TO BRING YOU HOME"]],"2025-02-08":["대형",["2025 LEECHANGSUB SOLO CONCERT 〈The Wayfarer〉 ENCORE","2025 검정치마 단독공연 SONGS TO BRING YOU HOME","2025 황영웅 앨범 발매 쇼케이스 PANORAMA : SHOWKING"]],"2025-02-09":["대형",["2025 LEECHANGSUB SOLO CONCERT 〈The Wayfarer〉 ENCORE","2025 검정치마 단독공연 SONGS TO BRING YOU HOME","2025 황영웅 앨범 발매 쇼케이스 PANORAMA : SHOWKING"]],"2025-02-14":["대형",["2025 TWS 1ST FANMEETING 〈42:CLUB〉 IN SEOUL","2025 윤하 앵콜 콘서트 〈GROWTH THEORY : Final Edition〉"]],"2025-02-15":["대형",["2025 TWS 1ST FANMEETING 〈42:CLUB〉 IN SEOUL","2025 박지현 콘서트 쇼맨쉽 SHOWMANSHIP","2025 윤하 앵콜 콘서트 〈GROWTH THEORY : Final Edition〉"]],"2025-02-16":["대형",["2025 TWS 1ST FANMEETING 〈42:CLUB〉 IN SEOUL","2025 박지현 콘서트 쇼맨쉽 SHOWMANSHIP","2025 윤하 앵콜 콘서트 〈GROWTH THEORY : Final Edition〉"]],"2025-02-21":["중소형",["2025 ONEW CONCERT [ONEW THE LIVE : CONNECTION] IN SEOUL"]],"2025-02-22":["대형",["2025 ONEW CONCERT [ONEW THE LIVE : CONNECTION] IN SEOUL","2025 영탁 단독 콘서트 TAK SHOW3 - 앙코르"]],"2025-02-23":["대형",["2025 ONEW CONCERT [ONEW THE LIVE : CONNECTION] IN SEOUL","2025 영탁 단독 콘서트 TAK SHOW3 - 앙코르"]],"2025-02-28":["대형",["j-hope Tour HOPE ON THE STAGE in SEOUL"]],"2025-03-01":["대형",["j-hope Tour HOPE ON THE STAGE in SEOUL","keshi: REQUIEM TOUR IN SEOU"]],"2025-03-02":["대형",["j-hope Tour HOPE ON THE STAGE in SEOUL"]],"2025-03-06":["중소형",["KEHLANI - CRASH WORLD TOUR in Seoul"]],"2025-03-07":["중소형",["TAEYEON CONCERT - The TENSE"]],"2025-03-08":["중소형",["TAEYEON CONCERT - The TENSE"]],"2025-03-09":["중소형",["TAEYEON CONCERT - The TENSE"]],"2025-03-15":["대형",["2024-25 aespa LIVE TOUR－SYNK：PARALLEL LINE－ENCORE","보이위드우크 첫 단독 내한공연 BoyWithUke BURNOUT WORLD TOUR 2025","2025년 이승환 콘서트 〈HEAVEN〉 - 서울"]],"2025-03-16":["대형",["2024-25 aespa LIVE TOUR－SYNK：PARALLEL LINE－ENCORE","2025년 이승환 콘서트 〈HEAVEN〉 - 서울"]],"2025-03-21":["중소형",["2025 BTOB FAN-CON 3,2,1 GO! MELympic 콘서트 주간 3위","2025 NCT WISH ASIA TOUR LOG in SEOUL"]],"2025-03-22":["대형",["2025 ATEEZ WORLD TOUR [TOWARDS THE LIGHT : WILL TO POWER] FINALE IN SEOUL","2025 BTOB FAN-CON 3,2,1 GO! MELympic 콘서트 주간 3위","2025 NCT WISH ASIA TOUR LOG in SEOUL"]],"2025-03-23":["대형",["2025 ATEEZ WORLD TOUR [TOWARDS THE LIGHT : WILL TO POWER] FINALE IN SEOUL","2025 BTOB FAN-CON 3,2,1 GO! MELympic 콘서트 주간 3위","2025 NCT WISH ASIA TOUR LOG in SEOUL"]],"2025-03-28":["중소형",["정동원棟동 이야기話화 3rd 전국투어 콘서트 - 서울"]],"2025-03-29":["중소형",["〈미스터트롯3〉 전국투어 콘서트","정동원棟동 이야기話화 3rd 전국투어 콘서트 - 서울"]],"2025-03-30":["중소형",["〈미스터트롯3〉 전국투어 콘서트","정동원棟동 이야기話화 3rd 전국투어 콘서트 - 서울"]],"2025-04-05":["대형",["2025 IVE THE 3RD FAN CONCERT 〈IVE SCOUT〉","EUNHYUK LIVE TOUR 2025 -Limitless: Time- Special in SEOUL"]],"2025-04-06":["대형",["2025 IVE THE 3RD FAN CONCERT 〈IVE SCOUT〉","EUNHYUK LIVE TOUR 2025 -Limitless: Time- Special in SEOUL"]],"2025-04-12":["대형",["2025 2NE1 CONCERT ［WELCOME BACK］ ENCORE IN SEOUL","2025 STAYC TOUR STAY TUNED"]],"2025-04-13":["대형",["2025 2NE1 CONCERT ［WELCOME BACK］ ENCORE IN SEOUL","2025 STAYC TOUR STAY TUNED"]],"2025-04-18":["중소형",["2025 ZEROBASEONE FAN-CON［BLUE MANSION］"]],"2025-04-19":["중소형",["2025 OH MY GIRL CONCERT [Milky Way]","2025 ZEROBASEONE FAN-CON［BLUE MANSION］"]],"2025-04-20":["중소형",["2025 OH MY GIRL CONCERT [Milky Way]","2025 ZEROBASEONE FAN-CON［BLUE MANSION］"]],"2025-04-26":["대형",["2024-25 TAEMIN WORLD TOUR [Ephemeral Gaze] Finale","DAESUNG 2025 ASIA TOUR：D’s WAVE IN SEOUL"]],"2025-04-27":["대형",["2024-25 TAEMIN WORLD TOUR [Ephemeral Gaze] Finale","DAESUNG 2025 ASIA TOUR：D’s WAVE IN SEOUL"]],"2025-05-02":["중소형",["Xdinary Heroes〈Beautiful Mind〉World Tour in SEOUL"]],"2025-05-03":["대형",["Xdinary Heroes〈Beautiful Mind〉World Tour in SEOUL","YUURI ARENA LIVE 2025 at SEOUL"]],"2025-05-04":["대형",["Xdinary Heroes〈Beautiful Mind〉World Tour in SEOUL","YUURI ARENA LIVE 2025 at SEOUL"]],"2025-05-05":["중소형",["Xdinary Heroes〈Beautiful Mind〉World Tour in SEOUL"]],"2025-05-09":["대형",["DAY6 3RD WORLD TOUR〈FOREVER YOUNG〉FINALE in SEOUL"]],"2025-05-10":["대형",["2025 N.Flying LIVE ＆CON4 : FULL CIRCLE","DAY6 3RD WORLD TOUR〈FOREVER YOUNG〉FINALE in SEOUL"]],"2025-05-11":["대형",["2025 N.Flying LIVE ＆CON4 : FULL CIRCLE","DAY6 3RD WORLD TOUR〈FOREVER YOUNG〉FINALE in SEOUL"]],"2025-05-16":["대형",["2025 BIBI 1st WORLD TOUR ［EVE］ IN SEOUL","DAY6 3RD WORLD TOUR〈FOREVER YOUNG〉FINALE in SEOUL"]],"2025-05-17":["대형",["2025 BIBI 1st WORLD TOUR ［EVE］ IN SEOUL","2025 KAI SOLO CONCERT TOUR 〈KAION〉 IN SEOUL","DAY6 3RD WORLD TOUR〈FOREVER YOUNG〉FINALE in SEOUL"]],"2025-05-18":["대형",["2025 BIBI 1st WORLD TOUR ［EVE］ IN SEOUL","2025 KAI SOLO CONCERT TOUR 〈KAION〉 IN SEOUL","DAY6 3RD WORLD TOUR〈FOREVER YOUNG〉FINALE in SEOUL"]],"2025-05-23":["대형",["SHINee WORLD Ⅶ [E.S.S.A.Y] (Every Stage Shines Around You)","[서울] 2025 멜로망스 전국투어 콘서트 〈Romance Station〉"]],"2025-05-24":["대형",["SHINee WORLD Ⅶ [E.S.S.A.Y] (Every Stage Shines Around You), [서울] 2025 멜로망스 전국투어 콘서트 〈Romance Station〉","2025 Jay Park World Tour [Serenades & Body Rolls]"]],"2025-05-25":["대형",["[서울] 2025 멜로망스 전국투어 콘서트 〈Romance Station〉","2025 Jay Park World Tour [Serenades & Body Rolls]","2025 Jay Park World Tour [Serenades & Body Rolls], [서울] 2025 멜로망스 전국투어 콘서트 〈Romance Station〉","SHINee WORLD Ⅶ [E.S.S.A.Y] (Every Stage Shines Around You)"]],"2025-05-30":["대형",["제17회 서울재즈페스티벌 2025"]],"2025-05-31":["대형",["제17회 서울재즈페스티벌 2025"]],"2025-06-01":["대형",["제17회 서울재즈페스티벌 2025"]],"2025-06-07":["대형",["2025 BAEKHYUN WORLD TOUR 〈Reverie〉 in SEOUL","2025 ILLIT GLITTER DAY IN SEOUL","윤종신 전국투어 콘서트 그때 - 서울"]],"2025-06-08":["대형",["2025 BAEKHYUN WORLD TOUR 〈Reverie〉 in SEOUL","2025 ILLIT GLITTER DAY IN SEOUL","윤종신 전국투어 콘서트 그때 - 서울"]],"2025-06-14":["대형",["2025 IRENE & SEULGI Concert Tour [ BALANCE ] in SEOUL","뷰티풀 민트 라이프 2025"]],"2025-06-15":["대형",["2025 IRENE & SEULGI Concert Tour [ BALANCE ] in SEOUL","뷰티풀 민트 라이프 2025"]],"2025-06-20":["중소형",["2025 박지현 콘서트 쇼맨쉽 SHOWMANSHIP","[서울 앵콜]","［서울］뮤지컬 번개맨 시즌2 - 여름맞이 특별공연"]],"2025-06-21":["중소형",["2025 박지현 콘서트 쇼맨쉽 SHOWMANSHIP","[서울 앵콜]"]],"2025-06-22":["중소형",["2025 박지현 콘서트 쇼맨쉽 SHOWMANSHIP","[서울 앵콜]","[서울 앵콜] 2025 박지현 콘서트 쇼맨쉽 SHOWMANSHIP","［서울］뮤지컬 번개맨 시즌2 - 여름맞이 특별공연"]],"2025-06-27":["중소형",["2025 PALMTREE ISLAND 3rd GALA CONCERT"]],"2025-06-28":["대형",["2025 PALMTREE ISLAND 3rd GALA CONCERT","2025 서울파크뮤직페스티벌"]],"2025-06-29":["대형",["2025 PALMTREE ISLAND 3rd GALA CONCERT","2025 서울파크뮤직페스티벌"]],"2025-07-04":["대형",["2025 RIIZE CONCERT TOUR [RIIZING LOUD] IN SEOUL"]],"2025-07-05":["대형",["2025 RIIZE CONCERT TOUR [RIIZING LOUD] IN SEOUL"]],"2025-07-06":["대형",["2025 RIIZE CONCERT TOUR [RIIZING LOUD] IN SEOUL"]],"2025-07-11":["대형",["HIGHLIGHT LIVE 2025 [RIDE OR DIE]"]],"2025-07-12":["대형",["HIGHLIGHT LIVE 2025 [RIDE OR DIE]"]],"2025-07-13":["대형",["HIGHLIGHT LIVE 2025 [RIDE OR DIE]"]],"2025-07-18":["대형",["2025 MONSTA X CONNECT X"]],"2025-07-19":["대형",["2025 MONSTA X CONNECT X"]],"2025-07-20":["대형",["2025 MONSTA X CONNECT X"]],"2025-07-25":["대형",["2025 WINNER CONCERT ［IN OUR CIRCLE］","BOYNEXTDOOR TOUR [KNOCK ON Vol.1] FINAL"]],"2025-07-26":["대형",["2025 WINNER CONCERT ［IN OUR CIRCLE］","BOYNEXTDOOR TOUR [KNOCK ON Vol.1] FINAL"]],"2025-07-27":["대형",["2025 WINNER CONCERT ［IN OUR CIRCLE］","BOYNEXTDOOR TOUR [KNOCK ON Vol.1] FINAL"]],"2025-08-02":["대형",["2025 ONEW WORLD TOUR [ONEW THE LIVE : PERCENT (%)] IN SEOUL","2025 WayV Concert Tour [NO Way OUT] in SEOUL","그룹사운드 잔나비 앵콜 콘서트 <모든소년소녀들 2125>"]],"2025-08-03":["대형",["2025 ONEW WORLD TOUR [ONEW THE LIVE : PERCENT (%)] IN SEOUL","그룹사운드 잔나비 앵콜 콘서트 <모든소년소녀들 2125>","2025 WayV Concert Tour [NO Way OUT] in SEOUL"]],"2025-08-08":["중소형",["THE BOYZ〈THE BLAZE〉WORLD TOUR in SEOUL"]],"2025-08-09":["대형",["2025 10CM 단독공연 〈5.0〉","2025 KANGDANIEL CONCERT ［ACT : NEW EPISODE］","THE BOYZ〈THE BLAZE〉WORLD TOUR in SEOUL"]],"2025-08-10":["대형",["2025 10CM 단독공연 〈5.0〉","2025 KANGDANIEL CONCERT ［ACT : NEW EPISODE］","THE BOYZ〈THE BLAZE〉WORLD TOUR in SEOUL"]],"2025-08-15":["중소형",["2025 PLAVE Asia Tour ［DASH: Quantum Leap］ in Seoul"]],"2025-08-16":["대형",["2025 NAM WOO HYUN CONCERT <식목일5 - 나무高 :TREE HIGH SCHOOL>","2025 PLAVE Asia Tour ［DASH: Quantum Leap］ in Seoul","2025 TAEMIN FANMEETING [CLASS-MATE]"]],"2025-08-17":["대형",["2025 NAM WOO HYUN CONCERT <식목일5 - 나무高 :TREE HIGH SCHOOL>","2025 PLAVE Asia Tour ［DASH: Quantum Leap］ in Seoul","2025 TAEMIN FANMEETING [CLASS-MATE]"]],"2025-08-22":["중소형",["SUPER JUNIOR 20th Anniversary TOUR 〈SUPER SHOW 10〉 in SEOUL"]],"2025-08-23":["중소형",["SUPER JUNIOR 20th Anniversary TOUR 〈SUPER SHOW 10〉 in SEOUL"]],"2025-08-24":["중소형",["SUPER JUNIOR 20th Anniversary TOUR 〈SUPER SHOW 10〉 in SEOUL"]],"2025-08-29":["중소형",["2025 aespa LIVE TOUR - SYNK : aeXIS LINE"]],"2025-08-30":["대형",["2025 aespa LIVE TOUR - SYNK : aeXIS LINE","이승환 35주년 콘서트 HEAVEN [ ENCORE ] - 서울"]],"2025-08-31":["대형",["2025 aespa LIVE TOUR - SYNK : aeXIS LINE","이승환 35주년 콘서트 HEAVEN [ ENCORE ] - 서울"]],"2025-09-06":["대형",["Someday Festival 2025 - week 1","크리스토퍼 내한공연 CHRISTOPHER LIVE IN SEOUL 2025"]],"2025-09-07":["중소형",["Someday Festival 2025 - week 1"]],"2025-09-13":["대형",["Gen Hoshino presents MAD HOPE Asia Tour in SEOUL","KB 조이올팍 페스티벌 2025"]],"2025-09-14":["대형",["Gen Hoshino presents MAD HOPE Asia Tour in SEOUL","KB 조이올팍 페스티벌 2025"]],"2025-09-20":["대형",["KB 조이올팍 페스티벌 2025"]],"2025-09-21":["대형",["KB 조이올팍 페스티벌 2025"]],"2025-09-26":["중소형",["2025 KEYLAND : Uncanny Valley"]],"2025-09-27":["중소형",["2025 KEYLAND : Uncanny Valley"]],"2025-09-28":["중소형",["2025 KEYLAND : Uncanny Valley"]],"2025-10-03":["대형",["2025 QWER 1ST WORLDTOUR [ROCKATION]","허용별 콘서트 : 보컬 전쟁 시즌2 The War of Vocalists II - 서울 앵콜","2025 ZEROBASEONE WORLD TOUR ［HERE ＆ NOW］ IN SEOUL"]],"2025-10-04":["대형",["2025 QWER 1ST WORLDTOUR [ROCKATION]","2025 ZEROBASEONE WORLD TOUR ［HERE ＆ NOW］ IN SEOUL"]],"2025-10-05":["대형",["2025 QWER 1ST WORLDTOUR [ROCKATION]","2025 ZEROBASEONE WORLD TOUR ［HERE ＆ NOW］ IN SEOUL"]],"2025-10-10":["대형",["2025 하현상 콘서트 〈Navy Horizon〉","2025-26 TREASURE TOUR［PULSE ON］IN SEOUL"]],"2025-10-11":["대형",["2025 쎄시봉 ［The Last］ 콘서트 - 서울","2025 하현상 콘서트 〈Navy Horizon〉","2025-26 TREASURE TOUR［PULSE ON］IN SEOUL"]],"2025-10-12":["대형",["2025 쎄시봉 ［The Last］ 콘서트 - 서울","2025 하현상 콘서트 〈Navy Horizon〉","2025-26 TREASURE TOUR［PULSE ON］IN SEOUL"]],"2025-10-17":["중소형",["비보쇼 with Friends"]],"2025-10-18":["대형",["그랜드 민트 페스티벌 2025","비보쇼 with Friends"]],"2025-10-19":["대형",["그랜드 민트 페스티벌 2025","비보쇼 with Friends"]],"2025-10-25":["중소형",["NEXZ SPECIAL CONCERT〈ONE BEAT〉"]],"2025-10-26":["중소형",["NEXZ SPECIAL CONCERT〈ONE BEAT〉"]],"2025-10-31":["대형",["IVE WORLD TOUR [SHOW WHAT I AM]"]],"2025-11-01":["대형",["2025 THE신승훈SHOW 〈SINCERELY 35〉","IVE WORLD TOUR [SHOW WHAT I AM]"]],"2025-11-02":["대형",["2025 THE신승훈SHOW 〈SINCERELY 35〉","IVE WORLD TOUR [SHOW WHAT I AM]"]],"2025-11-08":["대형",["2025 김동률 콘서트 산책","뮤지컬 〈빨래〉 20주년 콘서트"]],"2025-11-09":["대형",["2025 김동률 콘서트 산책","뮤지컬 〈빨래〉 20주년 콘서트"]],"2025-11-10":["대형",["2025 김동률 콘서트 산책"]],"2025-11-13":["대형",["2025 김동률 콘서트 산책"]],"2025-11-15":["중소형",["유다빈밴드 단독 콘서트 우리의 밤 - 커튼콜 , 박창근 장르 with Mr.아보카도 - 서울"]],"2025-11-16":["대형",["2025 김동률 콘서트 산책","유다빈밴드 단독 콘서트 우리의 밤 - 커튼콜 , 박창근 장르 with Mr.아보카도 - 서울"]],"2025-11-23":["대형",["2025 이승철 콘서트 <오케스트락3> 서울공연 , 임영웅 IM HERO TOUR 2025 - 서울"]],"2025-12-05":["대형",["2025 god CONCERT < ICONIC BOX > - 서울","2025 정승환의 안녕, 겨울"]],"2025-12-06":["대형",["2025 god CONCERT < ICONIC BOX > - 서울","2025 손태진 전국투어 콘서트 〈It‘s Son Time〉","2025 정승환의 안녕, 겨울"]],"2025-12-07":["대형",["2025 god CONCERT < ICONIC BOX > - 서울","2025 손태진 전국투어 콘서트 〈It‘s Son Time〉","2025 정승환의 안녕, 겨울"]],"2025-12-12":["중소형",["2025-26 로이킴 LIVE TOUR ［ja, daumm］ - 서울"]],"2025-12-14":["대형",["2025 박지현 팬콘서트 멤버쉽 MEMBERSHIP","2025 이문세 ‘The Best’","2025-26 로이킴 LIVE TOUR ［ja, daumm］ - 서울"]],"2025-12-19":["대형",["2025 DAY6 Special Concert ‘The Present’","2025 N.Flying LIVE ‘&CON4 ENCORE : Let’s Roll &4EVER","2025 규현(KYUHYUN) Concert ‘The Classic’"]],"2025-12-20":["대형",["2025 DAY6 Special Concert ‘The Present’","2025 N.Flying LIVE ‘&CON4 ENCORE : Let’s Roll &4EVER","2025 규현(KYUHYUN) Concert ‘The Classic’"]]};
+const Y = 2025, DOW = ["일","월","화","수","목","금","토"];
+let M = 11;
+const key = d => `${Y}-${String(M+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+const showOf = d => SCH[key(d)];
+const NODATA = new Set(["2025-11-22","2025-11-29","2025-11-30","2025-12-13","2025-12-21","2025-12-27","2025-12-28"]);
+const noData = d => NODATA.has(key(d));
+const G = {"보통":0,"혼잡":1,"매우 혼잡":2}, ICON = ["●","▲","■"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let sel = 6, station = HOME;
+
+const dayType = w => w === 5 ? "금요일" : (w === 6 || w === 0) ? "주말" : "평일";
+function info(d){ const w = new Date(Y, M, d).getDay(); const s = showOf(d); return {w, type: dayType(w), size: s ? s[0] : "없음", names: s ? s[1] : []}; }
+function grades(st, type, size){
+  const t = D.forecast[st][type] || {};
+  return t[size] || t["없음"] || t["중소형"] || t["대형"];
+}
+function windows(hs){ const o=[]; hs.forEach(h=>{ if(o.length && h===o[o.length-1][1]+1) o[o.length-1][1]=h; else o.push([h,h]); }); return o; }
+const rng = hs => windows(hs).map(([a,b]) => `${a}~${b+1}시`).join(", ");
+const lines = st => ST[st].L.map(l => `<span class="line L${l}">${l}</span>`).join("");
+
+function analyze(type, size, st){
+  const g = grades(st, type, size), H = D.hours;
+  const busy = H.filter((h,i) => g[i] !== "보통");
+  const show = busy.filter(h => h >= 10), commute = busy.filter(h => h < 10);
+  const very = H.filter((h,i) => g[i] === "매우 혼잡" && h >= 10);
+  const calm = H.filter((h,i) => g[i] === "보통" && h >= 9 && h <= 20);
+  const alts = windows(show).map(([a,b]) => {
+    const list = Object.keys(ST).filter(s => s !== st).filter(s => {
+      const gg = grades(s, type, size); return H.every((h,i) => h < a || h > b || gg[i] === "보통");
+    }).sort((x,y) => ST[x].km - ST[y].km);
+    return {a, b, list};
+  });
+  return {g, show, commute, very, calm, alts};
+}
+
+function drawCal(){
+  const first = new Date(Y, M, 1).getDay(), n = new Date(Y, M+1, 0).getDate();
+  let h = DOW.map((d,i) => `<div class="dow ${i===0?"sun":i===6?"sat":""}">${d}</div>`).join("");
+  h += Array(first).fill('<div></div>').join("");
+  for(let d=1; d<=n; d++){
+    const s = showOf(d), nd = noData(d), cls = s ? (s[0]==="대형"?"big":"mid") : nd ? "nod" : "";
+    h += `<button class="day ${cls}" data-d="${d}" aria-pressed="${d===sel}" aria-label="${M+1}월 ${d}일${s?" "+s[0]+" 공연":""}"><b>${d}</b>${s?`<i>${s[0]==="대형"?"대형":"공연"}</i>`:nd?"<i>–</i>":""}</button>`;
+  }
+  $("#cal").innerHTML = h;
+  $("#calTitle").textContent = `${Y}년 ${M+1}월`;
+  $("#prevM").disabled = M === 0; $("#nextM").disabled = M === 11;
+}
+
+function drawForecast(){
+  const f = info(sel), r = analyze(f.type, f.size, station);
+  $("#fcDate").textContent = `${M+1}월 ${sel}일 (${DOW[f.w]})`;
+  $("#fcShow").textContent = f.names.length ? `${f.size} 공연일 · ${f.names.length}건` : noData(sel) ? "자료 없음" : "공연 없음";
+  $("#fcNames").innerHTML = f.names.map(n => `<li>${esc(n)}</li>`).join("");
+  $("#strip").innerHTML = D.hours.map((h,i) => { const k = G[r.g[i]]; return `<div class="hr g${k}" role="listitem" aria-label="${h}시 ${r.g[i]}">${h}시<small>${r.g[i]==="매우 혼잡"?"매우 혼잡":r.g[i]}</small></div>`; }).join("");
+  $("#avoid").textContent = r.show.length ? rng(r.show) : "공연으로 붐비는 시간 없음";
+  $("#go").textContent = r.calm.length ? rng(r.calm) : "-";
+  $("#commute").textContent = (noData(sel) ? "※ 이 날은 연계 데이터에 기록이 없어 공연 여부를 알 수 없습니다. 공연이 없다고 보고 낸 예보입니다. " : "") + (r.commute.length ? `※ ${rng(r.commute)}는 평소 출근 시간 혼잡입니다.` : "");
+  const alt = [];
+  r.alts.filter(x => x.list.length).forEach(x => { const k = x.list.join("|"), m = alt.find(y => y.k === k); if(m) m.t += `, ${x.a}~${x.b+1}시`; else alt.push({k, t:`${x.a}~${x.b+1}시`, list:x.list}); });
+  $("#alts").innerHTML = r.show.length ? `<h3>붐비는 시간에 이용할 만한 역</h3>` + (alt.length ? alt.map(x => `<p class="small muted" style="margin:10px 0 0">${x.t}</p><div class="alt-list">${x.list.map(s => `<div class="alt"><b>${lines(s)} ${esc(ST[s].n)}</b><span class="small muted">엘리베이터 ${ST[s].e}곳 · 올림픽공원역에서 약 ${ST[s].km}km</span></div>`).join("")}</div>`).join("") : `<p class="muted">이 시간에는 주변 역도 함께 붐빕니다. 가급적 이동을 미뤄 주세요.</p>`) + `<p class="tip">사시는 곳에서 가까운 다른 역이 있다면, 혼잡한 ${esc(ST[station].n)}역 대신 그 역을 이용하세요.</p>` : "";
+  const altTxt = alt.length ? alt[0].list.slice(0,2).map(s => `${ST[s].n}역(엘리베이터 ${ST[s].e}곳)`).join(", ") : "";
+  $("#bubble").textContent = r.show.length
+    ? `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]}) 올림픽공원에 ${f.size=="대형"?"대형 ":""}공연이 있어요.\n${ST[station].n}역 붐비는 시간: ${rng(r.show)}${r.very.length?`\n특히 ${rng(r.very)}는 매우 붐벼요.`:""}\n다니기 좋은 시간: ${r.calm.length?rng(r.calm):"-"}${altTxt?`\n붐빌 때는 ${altTxt}을 이용해 보세요.`:""}`
+    : `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]})은 ${ST[station].n}역에 공연으로 인한 혼잡이 예상되지 않아요.`;
+}
+
+function drawAgency(){
+  const n = new Date(Y, M+1, 0).getDate(), days = [];
+  for(let d=1; d<=n; d++) if(showOf(d)) days.push(d);
+  let veryH = 0;
+  const rows = days.map(d => {
+    const f = info(d), r = analyze(f.type, f.size, HOME); veryH += r.very.length;
+    const start = r.show.length ? Math.min(...r.show) : null;
+    const act = r.show.length ? `이동지원 차량은 ${start}시 이전 배치 · 방문 일정은 ${r.calm.length?rng(r.calm):"오전"} 권장` : "공연 관련 혼잡 없음";
+    return `<tr><td class="nw" data-l="날짜">${M+1}월 ${d}일 (${DOW[f.w]})</td><td data-l="공연"><span class="pill ${f.size==="대형"?"g2":"g1"}">${f.size}</span> ${esc(f.names[0]||"")}${f.names.length>1?` 외 ${f.names.length-1}건`:""}</td><td class="nw" data-l="매우 혼잡">${r.very.length?rng(r.very):"없음"}</td><td data-l="권장 조치">${act}</td></tr>`;
+  });
+  $("#agTable tbody").innerHTML = rows.join("") || `<tr><td colspan="4" class="muted">이 달에는 공연이 없습니다.</td></tr>`;
+  $("#agMonth").textContent = `${Y}년 ${M+1}월`;
+  const big = days.filter(d => showOf(d)[0]==="대형").length;
+  $("#tiles").innerHTML = `<div class="tile"><b>${days.length}일</b>이달 공연일</div><div class="tile"><b>${big}일</b>대형 공연일 (1만 명 이상)</div><div class="tile"><b>${veryH}시간</b>올림픽공원역 매우 혼잡 예상</div>`;
+}
+
+function drawRef(){
+  $("#thTable tbody").innerHTML = Object.keys(D.thresholds).map(s => `<tr><td>${lines(s)} ${esc(ST[s].n)}</td><td style="text-align:right">${D.thresholds[s][0].toLocaleString()}명</td><td style="text-align:right">${D.thresholds[s][1].toLocaleString()}명</td><td style="text-align:right">${ST[s].e}곳</td></tr>`).join("");
+  const opts = Object.keys(ST).map(s => `<option value="${esc(s)}">${esc(ST[s].n)}</option>`).join("");
+  $("#stSel").innerHTML = opts; $("#myStation").innerHTML = opts;
+}
+
+function goMonth(m){ M = Math.max(0, Math.min(11, m)); const n = new Date(Y, M+1, 0).getDate(); let d = 1; for(let i=1;i<=n;i++){ if(showOf(i) && showOf(i)[0]==="대형"){ d=i; break; } } sel = d; drawCal(); drawForecast(); drawAgency(); }
+$("#prevM").addEventListener("click", () => goMonth(M-1));
+$("#nextM").addEventListener("click", () => goMonth(M+1));
+$("#cal").addEventListener("click", e => { const b = e.target.closest(".day"); if(!b) return; sel = +b.dataset.d; drawCal(); drawForecast(); });
+$("#stSel").addEventListener("change", e => { station = e.target.value; drawForecast(); });
+$("#copyBtn").addEventListener("click", async e => { try{ await navigator.clipboard.writeText($("#bubble").textContent); e.target.textContent = "복사됨"; }catch(_){ e.target.textContent = "복사 안 됨"; } setTimeout(()=>e.target.textContent="문구 복사",1500); });
+const bigBtn = $("#bigBtn");
+function setBig(on){ document.body.classList.toggle("big", on); bigBtn.setAttribute("aria-pressed", on); bigBtn.textContent = on ? "글자 보통" : "글자 크게"; try{ localStorage.setItem("big", on?"1":""); }catch(_){} }
+bigBtn.addEventListener("click", () => setBig(!document.body.classList.contains("big")));
+try{ if(localStorage.getItem("big")) setBig(true); }catch(_){}
+
+document.querySelectorAll('input[name=who]').forEach(r => r.addEventListener("change", () => {
+  const v = document.querySelector('input[name=who]:checked').value;
+  $("#proxy").classList.toggle("on", v !== "self");
+  $("#pRelL").textContent = v === "agency" ? "기관명" : "관계";
+}));
+$("#form").addEventListener("submit", e => {
+  e.preventDefault();
+  const phone = $("#phone").value.replace(/\D/g,""), when = [...document.querySelectorAll('input[name=when]:checked')].map(x=>x.value);
+  const who = document.querySelector('input[name=who]:checked').value;
+  let msg = "";
+  if(!/^01\d{8,9}$/.test(phone)) msg = "휴대폰 번호를 다시 확인해 주세요.";
+  else if(!when.length) msg = "알림 받을 때를 하나 이상 골라 주세요.";
+  else if(who !== "self" && !$("#pName").value.trim()) msg = "신청하시는 분 이름을 적어 주세요.";
+  else if(!$("#agree").checked) msg = "개인정보 수집·이용에 동의해 주세요.";
+  $("#err").textContent = msg; if(msg) return;
+  const st = ST[$("#myStation").value].n, ch = document.querySelector('input[name=ch]:checked').value;
+  $("#doneTxt").textContent = `${phone.slice(0,3)}-****-${phone.slice(-4)} 번호로 ${ch} 알림을 보내드려요. 기준 역: ${st}역 · 받는 때: ${when.join(", ")}${who!=="self"?` · 신청인: ${$("#pName").value.trim()}`:""}`;
+  $("#form").style.display = "none"; $("#done").classList.add("on");
+});
+
+drawRef(); drawCal(); drawForecast(); drawAgency();
+}
+</script>
+</body>
+</html>
