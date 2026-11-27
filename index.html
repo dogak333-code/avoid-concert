@@ -145,7 +145,7 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="brand" href="#forecast">공연 피해가세요<span>올림픽공원 주변 외출 예보</span></a>
+  <a class="brand" href="#forecast">공연 피해가세요<span>그날 올림픽공원엔 사람이 얼마나 있을까?</span></a>
   <nav aria-label="메뉴"><a href="#forecast">혼잡 예보</a><a href="#signup">알림 신청</a><a href="#agency">기관용</a><a href="#about">분석 근거</a></nav>
   <button class="bigbtn" id="bigBtn" aria-pressed="false">글자 크게</button>
 </div></header>
@@ -165,14 +165,14 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
       <div class="row"><label for="stSel" class="small">이용하는 역</label><select id="stSel"></select></div>
       <div class="strip" id="strip" role="list" aria-label="시간대별 혼잡 예보"></div>
       <div class="keys"><span class="pill g0">보통</span><span class="pill g1">혼잡</span><span class="pill g2">매우 혼잡</span><span class="muted small">이 역의 1년 중 붐비는 정도 기준</span></div>
+      <p class="note" style="margin-top:6px">※ 등급은 2025년 서울교통공사 승하차 데이터로 같은 요일·같은 공연 규모 날의 평균을 계산한 예보입니다.</p>
       <div class="sum">
-        <div class="box avoid"><h4>이 시간은 피하세요</h4><p id="avoid"></p></div>
-        <div class="box go"><h4>다니기 좋은 시간</h4><p id="go"></p></div>
+        <div class="box avoid"><h4>❌ 이 시간은 피하세요</h4><p id="avoid"></p></div>
+        <div class="box go"><h4>⭕ 다니기 좋은 시간</h4><p id="go"></p></div>
       </div>
       <p class="note" id="commute"></p>
       <div class="alts" id="alts"></div>
       <div class="row"><a class="btn" href="#signup" style="text-decoration:none;display:inline-flex;align-items:center">이 예보를 문자로 받기</a></div>
-      <p class="note">※ 등급은 2025년 서울교통공사 승하차 데이터로 같은 요일·같은 공연 규모 날의 평균을 계산한 예보입니다.</p>
     </div>
   </div>
 </div></section>
@@ -272,7 +272,11 @@ function grades(st, type, size){
   return t[size] || t["없음"] || t["중소형"] || t["대형"];
 }
 function windows(hs){ const o=[]; hs.forEach(h=>{ if(o.length && h===o[o.length-1][1]+1) o[o.length-1][1]=h; else o.push([h,h]); }); return o; }
-const rng = hs => windows(hs).map(([a,b]) => `${a}~${b+1}시`).join(", ");
+const per = h => h < 12 ? "오전" : h < 24 ? "오후" : "밤";
+const h12 = h => h === 12 || h === 24 ? 12 : h % 12;
+const tl = h => `${per(h)} ${h12(h)}시`;
+const span = (a, e) => per(a) === per(e) ? `${tl(a)}~${h12(e)}시` : `${tl(a)}~${tl(e)}`;
+const rng = hs => windows(hs).map(([a,b]) => span(a, b+1)).join(", ");
 const lines = st => ST[st].L.map(l => `<span class="line L${l}">${l}</span>`).join("");
 
 function analyze(type, size, st){
@@ -313,9 +317,9 @@ function drawForecast(){
   $("#go").textContent = r.calm.length ? rng(r.calm) : "-";
   $("#commute").textContent = (noData(sel) ? "※ 이 날은 연계 데이터에 기록이 없어 공연 여부를 알 수 없습니다. 공연이 없다고 보고 낸 예보입니다. " : "") + (r.commute.length ? `※ ${rng(r.commute)}는 평소 출근 시간 혼잡입니다.` : "");
   const alt = [];
-  r.alts.filter(x => x.list.length).forEach(x => { const k = x.list.join("|"), m = alt.find(y => y.k === k); if(m) m.t += `, ${x.a}~${x.b+1}시`; else alt.push({k, t:`${x.a}~${x.b+1}시`, list:x.list}); });
-  $("#alts").innerHTML = r.show.length ? `<h3>붐비는 시간에 이용할 만한 역</h3>` + (alt.length ? alt.map(x => `<p class="small muted" style="margin:10px 0 0">${x.t}</p><div class="alt-list">${x.list.map(s => `<div class="alt"><b>${lines(s)} ${esc(ST[s].n)}</b><span class="small muted">엘리베이터 ${ST[s].e}곳 · 올림픽공원역에서 약 ${ST[s].km}km</span></div>`).join("")}</div>`).join("") : `<p class="muted">이 시간에는 주변 역도 함께 붐빕니다. 가급적 이동을 미뤄 주세요.</p>`) + `<p class="tip">사시는 곳에서 가까운 다른 역이 있다면, 혼잡한 ${esc(ST[station].n)}역 대신 그 역을 이용하세요.</p>` : "";
-  const altTxt = alt.length ? alt[0].list.slice(0,2).map(s => `${ST[s].n}역(엘리베이터 ${ST[s].e}곳)`).join(", ") : "";
+  r.alts.filter(x => x.list.length).forEach(x => { const k = x.list.join("|"), m = alt.find(y => y.k === k); if(m) m.t += `, ${span(x.a, x.b+1)}`; else alt.push({k, t:span(x.a, x.b+1), list:x.list}); });
+  $("#alts").innerHTML = r.show.length ? `<h3>붐비는 시간에 이용할 만한 역</h3>` + (alt.length ? alt.map(x => `<p class="small muted" style="margin:10px 0 0">${x.t}</p><div class="alt-list">${x.list.map(s => `<div class="alt"><b>${lines(s)} ${esc(ST[s].n)}</b><span class="small muted">엘리베이터 ${ST[s].e}대<br>올림픽공원역에서 <span style="white-space:nowrap">약 ${ST[s].km}km</span></span></div>`).join("")}</div>`).join("") : `<p class="muted">이 시간에는 주변 역도 함께 붐빕니다. 가급적 이동을 미뤄 주세요.</p>`) + `<p class="tip">💡 더 가까운 역이 있다면, 혼잡한 ${esc(ST[station].n)}역 대신 그 역을 이용하세요.</p>` : "";
+  const altTxt = alt.length ? alt[0].list.slice(0,2).map(s => `${ST[s].n}역(엘리베이터 ${ST[s].e}대)`).join(", ") : "";
   $("#smsWhen").textContent = `위 혼잡 예보에서 고른 ${M+1}월 ${sel}일 기준 예시 · 공연 전날 오후와 당일 아침 2번 보내드려요`;
   $("#bubble").textContent = r.show.length
     ? `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]}) 올림픽공원에 ${f.size=="대형"?"대형 ":""}공연이 있어요.\n${ST[station].n}역 붐비는 시간: ${rng(r.show)}${r.very.length?`\n특히 ${rng(r.very)}는 매우 붐벼요.`:""}\n다니기 좋은 시간: ${r.calm.length?rng(r.calm):"-"}${altTxt?`\n붐빌 때는 ${altTxt}을 이용해 보세요.`:""}`
@@ -329,7 +333,7 @@ function drawAgency(){
   const rows = days.map(d => {
     const f = info(d), r = analyze(f.type, f.size, HOME); veryH += r.very.length;
     const start = r.show.length ? Math.min(...r.show) : null;
-    const act = r.show.length ? `이동지원 차량은 ${start}시 이전 배치 · 방문 일정은 ${r.calm.length?rng(r.calm):"오전"} 권장` : "공연 관련 혼잡 없음";
+    const act = r.show.length ? `이동지원 차량은 ${tl(start)} 이전 배치 · 방문 일정은 ${r.calm.length?rng(r.calm):"오전"} 권장` : "공연 관련 혼잡 없음";
     return `<tr><td class="nw" data-l="날짜">${M+1}월 ${d}일 (${DOW[f.w]})</td><td data-l="공연"><span class="pill ${f.size==="대형"?"g2":"g1"}">${f.size}</span> ${esc(f.names[0]||"")}${f.names.length>1?` 외 ${f.names.length-1}건`:""}</td><td class="nw" data-l="매우 혼잡">${r.very.length?rng(r.very):"없음"}</td><td data-l="권장 조치">${act}</td></tr>`;
   });
   $("#agTable tbody").innerHTML = rows.join("") || `<tr><td colspan="4" class="muted">이 달에는 공연이 없습니다.</td></tr>`;
@@ -339,7 +343,7 @@ function drawAgency(){
 }
 
 function drawRef(){
-  $("#thTable tbody").innerHTML = Object.keys(D.thresholds).map(s => `<tr><td>${lines(s)} ${esc(ST[s].n)}</td><td style="text-align:right">${D.thresholds[s][0].toLocaleString()}명</td><td style="text-align:right">${D.thresholds[s][1].toLocaleString()}명</td><td style="text-align:right">${ST[s].e}곳</td></tr>`).join("");
+  $("#thTable tbody").innerHTML = Object.keys(D.thresholds).map(s => `<tr><td>${lines(s)} ${esc(ST[s].n)}</td><td style="text-align:right">${D.thresholds[s][0].toLocaleString()}명</td><td style="text-align:right">${D.thresholds[s][1].toLocaleString()}명</td><td style="text-align:right">${ST[s].e}대</td></tr>`).join("");
   const opts = Object.keys(ST).map(s => `<option value="${esc(s)}">${esc(ST[s].n)}</option>`).join("");
   $("#stSel").innerHTML = opts; $("#myStation").innerHTML = opts;
 }
