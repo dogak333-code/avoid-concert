@@ -7,15 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-/* VOICE: 동네 안내문처럼 차분하고 크게 – 어르신이 한눈에 읽는 생활 정보
+/* VOICE: 동네 안내문처럼 차분하고 크게 – 어르신이 한눈에 읽는 생활 정보 (주색: 진한 남색)
    IDEA: 일기예보 판 – 날씨 대신 '역 혼잡'을 시간별로 예보한다
    PICTURE: 달력 + 시간별 혼잡 예보 띠 (실제로 동작하는 화면이 곧 그림)
    COLOUR/TYPE: 5호선 보라 주색, 흰 바탕, 상태색(보통·혼잡·매우 혼잡)은 아이콘+글자와 함께 / Noto Sans KR
    LAYOUT: 상단 예보 도구 → 알림 신청 → 기관용 → 분석 근거 */
 :root{color-scheme:light dark;
---bg:light-dark(#ffffff,#141018);--ink:light-dark(#1b1620,#f3eff6);--ink2:light-dark(#5d5566,#b9afc2);
---line:light-dark(#e6e1ea,#2e2735);--soft:light-dark(#f6f2f9,#1e1824);
---pur:light-dark(#7b3fa0,#b68ad4);--pur-d:light-dark(#5a2a78,#d6bce8);--pur-bg:light-dark(#efe5f6,#2b1f36);
+--bg:light-dark(#ffffff,#10141c);--ink:light-dark(#161b26,#eef1f6);--ink2:light-dark(#545c6b,#aeb6c4);
+--line:light-dark(#e1e5ec,#283041);--soft:light-dark(#f3f5f9,#181e2a);
+--pur:light-dark(#1c2f5a,#8fb0e6);--pur-d:light-dark(#14223f,#c9d8f2);--pur-bg:light-dark(#e6ecf5,#1a2436);
 --ok:light-dark(#1f7a55,#5ccf9c);--ok-bg:light-dark(#e3f4ec,#173327);
 --busy:light-dark(#9a6400,#f2b84b);--busy-bg:light-dark(#fff1d6,#3a2a0f);
 --very:light-dark(#c62828,#ff7b72);--very-bg:light-dark(#fde3e1,#3d1716)}
@@ -42,7 +42,7 @@ button{cursor:pointer}
 .top nav a{color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:500}
 .top nav a:hover{background:rgba(255,255,255,.15)}
 .bigbtn{background:#fff;color:var(--pur-d);border:0;border-radius:999px;padding:8px 14px;font-weight:700;min-height:40px}
-:root[data-theme=dark] .bigbtn{color:#5a2a78}
+:root[data-theme=dark] .bigbtn{color:#14223f}
 /* hero */
 .hero{background:linear-gradient(var(--pur-bg),var(--bg))}
 .hero h1{font-size:clamp(30px,4.4vw,48px);font-weight:900;margin-bottom:6px}
@@ -53,6 +53,7 @@ button{cursor:pointer}
 .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
 .nav{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--soft);font-size:1.3em;font-weight:700;color:var(--pur-d)}
 .nav:disabled{opacity:.35;cursor:default}
+.pick{margin:2px 0 10px;font-size:1.05em;font-weight:700;color:var(--pur-d)}
 .shows{margin:0 0 6px;padding-left:18px;font-size:.88em;color:var(--ink2)}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
 .cal .dow{font-size:.78em;color:var(--ink2);padding:4px 0}
@@ -76,7 +77,7 @@ button{cursor:pointer}
 select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg)}
 .strip{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}
 .hr{border-radius:8px;padding:10px 0 8px;text-align:center;font-weight:700;font-size:.92em;line-height:1.3}
-.hr small{display:block;font-weight:500;font-size:.82em;opacity:.8}
+.hr small{display:block;font-weight:500;font-size:.78em;opacity:.9;white-space:nowrap}
 .g0{background:var(--ok-bg);color:var(--ok)}.g1{background:var(--busy-bg);color:var(--busy)}.g2{background:var(--very-bg);color:var(--very)}
 .keys{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0 0;font-size:.85em}
 .sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
@@ -97,6 +98,9 @@ select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6
 .btn.ghost{background:transparent;color:var(--pur-d);border:1.5px solid var(--pur)}
 .note{font-size:.8em;color:var(--ink2);margin-top:10px}
 /* form */
+.sep{background:var(--soft);border-top:6px solid var(--pur);margin-top:clamp(20px,3vw,40px)}
+.eyebrow{margin:0 0 6px;font-weight:700;color:var(--pur)}
+.sep .form,.sep .done{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,3vw,28px)}
 .form{max-width:640px;display:grid;gap:18px}
 .f label,.f legend{display:block;font-weight:700;margin-bottom:6px}
 .f input[type=tel],.f input[type=text]{width:100%;min-height:48px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg);font-size:16px}
@@ -147,11 +151,11 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
 </div></header>
 
 <section class="band hero" id="forecast"><div class="wrap">
-  <h1>공연 날, 붐비는 시간을 피해서 다니세요</h1>
-  <p class="lead muted">올림픽공원은 주말 거의 매번 공연이 열리고, 큰 공연 날은 주변 역이 몇 배로 붐빕니다. 송파구 어르신께서 덜 붐비는 시간과 역을 미리 아실 수 있도록 알려드려요.</p>
+  <h1>공연이 열리는 날에는 사람이 많아요</h1>
+  <p class="lead muted">큰 공연이 있으면 붐벼서 다니기 힘들어요.<br>송파구 거주 어르신께서 덜 붐비는 시간과 역을 미리 아실 수 있도록 알려드려요.</p>
   <div class="tool">
     <div class="card" aria-label="공연 달력">
-      <div class="cal-head"><button class="nav" id="prevM" aria-label="이전 달">‹</button><h3 id="calTitle"></h3><button class="nav" id="nextM" aria-label="다음 달">›</button></div><p class="small muted" style="margin:0 0 8px">날짜를 누르세요</p>
+      <div class="cal-head"><button class="nav" id="prevM" aria-label="이전 달">‹</button><h3 id="calTitle"></h3><button class="nav" id="nextM" aria-label="다음 달">›</button></div><p class="pick">날짜를 누르세요</p>
       <div class="cal" id="cal"></div>
       <div class="legend"><span class="l1">대형 공연(1만 명 이상)</span><span class="l2">중소형 공연</span><span class="l3">자료 없음</span></div>
       <p class="note">2025년 실제 공연 일정(한국체육산업개발 공연·관람객 데이터)으로 시연합니다. 실제 서비스에서는 다가오는 공연 일정을 연동합니다.</p>
@@ -160,7 +164,7 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
       <div class="fc-title"><h3 id="fcDate"></h3><span class="tag" id="fcShow"></span></div><ul class="shows" id="fcNames"></ul>
       <div class="row"><label for="stSel" class="small">이용하는 역</label><select id="stSel"></select></div>
       <div class="strip" id="strip" role="list" aria-label="시간대별 혼잡 예보"></div>
-      <div class="keys"><span class="pill g0">● 보통</span><span class="pill g1">▲ 혼잡</span><span class="pill g2">■ 매우 혼잡</span><span class="muted small">이 역의 1년 중 붐비는 정도 기준</span></div>
+      <div class="keys"><span class="pill g0">보통</span><span class="pill g1">혼잡</span><span class="pill g2">매우 혼잡</span><span class="muted small">이 역의 1년 중 붐비는 정도 기준</span></div>
       <div class="sum">
         <div class="box avoid"><h4>이 시간은 피하세요</h4><p id="avoid"></p></div>
         <div class="box go"><h4>다니기 좋은 시간</h4><p id="go"></p></div>
@@ -176,7 +180,8 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
   </div>
 </div></section>
 
-<section class="band" id="signup"><div class="wrap">
+<section class="band sep" id="signup"><div class="wrap">
+  <p class="eyebrow">알림 서비스</p>
   <h2>문자·카카오톡 알림 신청</h2>
   <p class="lead muted">앱을 설치하지 않아도 됩니다. 가족이나 복지관 담당자가 대신 신청할 수도 있어요.</p>
   <form class="form" id="form" novalidate>
@@ -300,7 +305,7 @@ function drawForecast(){
   $("#fcDate").textContent = `${M+1}월 ${sel}일 (${DOW[f.w]})`;
   $("#fcShow").textContent = f.names.length ? `${f.size} 공연일 · ${f.names.length}건` : noData(sel) ? "자료 없음" : "공연 없음";
   $("#fcNames").innerHTML = f.names.map(n => `<li>${esc(n)}</li>`).join("");
-  $("#strip").innerHTML = D.hours.map((h,i) => { const k = G[r.g[i]]; return `<div class="hr g${k}" role="listitem" aria-label="${h}시 ${r.g[i]}">${h}시<small>${ICON[k]} ${r.g[i]==="매우 혼잡"?"매우":r.g[i]}</small></div>`; }).join("");
+  $("#strip").innerHTML = D.hours.map((h,i) => { const k = G[r.g[i]]; return `<div class="hr g${k}" role="listitem" aria-label="${h}시 ${r.g[i]}">${h}시<small>${r.g[i]==="매우 혼잡"?"매우 혼잡":r.g[i]}</small></div>`; }).join("");
   $("#avoid").textContent = r.show.length ? rng(r.show) : "공연으로 붐비는 시간 없음";
   $("#go").textContent = r.calm.length ? rng(r.calm) : "-";
   $("#commute").textContent = (noData(sel) ? "※ 이 날은 연계 데이터에 기록이 없어 공연 여부를 알 수 없습니다. 공연이 없다고 보고 낸 예보입니다. " : "") + (r.commute.length ? `※ ${rng(r.commute)}는 평소 출근 시간 혼잡입니다.` : "");
