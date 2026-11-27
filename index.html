@@ -92,7 +92,7 @@ select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6
 .line{display:inline-block;font-size:.72em;font-weight:700;color:#fff;border-radius:999px;padding:1px 7px;margin-right:3px}
 .L3{background:#ef7c1c}.L5{background:#996cac}.L8{background:#e6186c}.L9{background:#bdb092;color:#2a2410}
 .tip{border-left:4px solid var(--pur);padding:8px 12px;background:var(--pur-bg);border-radius:0 10px 10px 0;margin-top:10px}
-.sms{margin-top:16px}
+.sms{margin-top:0}
 .bubble{background:var(--soft);border-radius:16px 16px 16px 4px;padding:14px 16px;white-space:pre-line;font-size:.95em;max-width:520px}
 .btn{border:0;border-radius:12px;background:var(--pur);color:#fff;font-weight:700;padding:12px 18px;min-height:48px}
 .btn.ghost{background:transparent;color:var(--pur-d);border:1.5px solid var(--pur)}
@@ -171,10 +171,7 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
       </div>
       <p class="note" id="commute"></p>
       <div class="alts" id="alts"></div>
-      <div class="sms"><h3>이렇게 문자로 알려드려요</h3><p class="small muted">공연 전날 오후 · 당일 아침 2번</p>
-        <div class="bubble" id="bubble"></div>
-        <div class="row"><button class="btn ghost" id="copyBtn">문구 복사</button><a class="btn" href="#signup" style="text-decoration:none;display:inline-flex;align-items:center">알림 신청하기</a></div>
-      </div>
+      <div class="row"><a class="btn" href="#signup" style="text-decoration:none;display:inline-flex;align-items:center">이 예보를 문자로 받기</a></div>
       <p class="note">※ 등급은 2025년 서울교통공사 승하차 데이터로 같은 요일·같은 공연 규모 날의 평균을 계산한 예보입니다.</p>
     </div>
   </div>
@@ -182,6 +179,12 @@ footer{padding:22px max(5vw,16px);font-size:.8em;color:var(--ink2)}
 
 <section class="band sep" id="signup"><div class="wrap">
   <p class="eyebrow">알림 서비스</p>
+  <div class="sms card" style="max-width:640px;margin:0 0 28px">
+    <h3>이렇게 문자로 알려드려요</h3>
+    <p class="small muted" id="smsWhen" style="margin:4px 0 10px">공연 전날 오후 · 당일 아침 2번</p>
+    <div class="bubble" id="bubble"></div>
+    <div class="row"><button class="btn ghost" id="copyBtn">문구 복사</button></div>
+  </div>
   <h2>문자·카카오톡 알림 신청</h2>
   <p class="lead muted">앱을 설치하지 않아도 됩니다. 가족이나 복지관 담당자가 대신 신청할 수도 있어요.</p>
   <form class="form" id="form" novalidate>
@@ -313,6 +316,7 @@ function drawForecast(){
   r.alts.filter(x => x.list.length).forEach(x => { const k = x.list.join("|"), m = alt.find(y => y.k === k); if(m) m.t += `, ${x.a}~${x.b+1}시`; else alt.push({k, t:`${x.a}~${x.b+1}시`, list:x.list}); });
   $("#alts").innerHTML = r.show.length ? `<h3>붐비는 시간에 이용할 만한 역</h3>` + (alt.length ? alt.map(x => `<p class="small muted" style="margin:10px 0 0">${x.t}</p><div class="alt-list">${x.list.map(s => `<div class="alt"><b>${lines(s)} ${esc(ST[s].n)}</b><span class="small muted">엘리베이터 ${ST[s].e}곳 · 올림픽공원역에서 약 ${ST[s].km}km</span></div>`).join("")}</div>`).join("") : `<p class="muted">이 시간에는 주변 역도 함께 붐빕니다. 가급적 이동을 미뤄 주세요.</p>`) + `<p class="tip">사시는 곳에서 가까운 다른 역이 있다면, 혼잡한 ${esc(ST[station].n)}역 대신 그 역을 이용하세요.</p>` : "";
   const altTxt = alt.length ? alt[0].list.slice(0,2).map(s => `${ST[s].n}역(엘리베이터 ${ST[s].e}곳)`).join(", ") : "";
+  $("#smsWhen").textContent = `위 혼잡 예보에서 고른 ${M+1}월 ${sel}일 기준 예시 · 공연 전날 오후와 당일 아침 2번 보내드려요`;
   $("#bubble").textContent = r.show.length
     ? `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]}) 올림픽공원에 ${f.size=="대형"?"대형 ":""}공연이 있어요.\n${ST[station].n}역 붐비는 시간: ${rng(r.show)}${r.very.length?`\n특히 ${rng(r.very)}는 매우 붐벼요.`:""}\n다니기 좋은 시간: ${r.calm.length?rng(r.calm):"-"}${altTxt?`\n붐빌 때는 ${altTxt}을 이용해 보세요.`:""}`
     : `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]})은 ${ST[station].n}역에 공연으로 인한 혼잡이 예상되지 않아요.`;
