@@ -322,9 +322,22 @@ function drawForecast(){
   $("#alts").innerHTML = r.show.length ? `<h3>붐비는 시간에 이용할 만한 역</h3>` + (alt.length ? alt.map(x => `<p class="small muted" style="margin:10px 0 0">${x.t}</p><div class="alt-list">${x.list.map(s => `<div class="alt"><b>${lines(s)} ${esc(ST[s].n)}</b><span class="small muted">엘리베이터 ${ST[s].e}대<br>올림픽공원역에서 <span style="white-space:nowrap">약 ${ST[s].km}km</span></span></div>`).join("")}</div>`).join("") : `<p class="muted">이 시간에는 주변 역도 함께 붐빕니다. 가급적 이동을 미뤄 주세요.</p>`) + `<p class="tip">💡 더 가까운 역이 있다면, 혼잡한 ${esc(ST[station].n)}역 대신 그 역을 이용하세요.</p>` : "";
   const altTxt = alt.length ? alt[0].list.slice(0,2).map(s => `${ST[s].n}역(엘리베이터 ${ST[s].e}대)`).join(", ") : "";
   $("#smsWhen").textContent = `위 혼잡 예보에서 고른 ${M+1}월 ${sel}일 기준 예시 · 공연 전날 오후와 당일 아침 2번 보내드려요`;
-  $("#bubble").textContent = r.show.length
-    ? `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]}) 올림픽공원에 ${f.size=="대형"?"대형 ":""}공연이 있어요.\n${ST[station].n}역 붐비는 시간: ${rng(r.show)}${r.very.length?`\n특히 ${rng(r.very)}는 매우 붐벼요.`:""}\n다니기 좋은 시간: ${r.calm.length?rng(r.calm):"-"}${altTxt?`\n붐빌 때는 ${altTxt}을 이용해 보세요.`:""}`
-    : `[공연 피해가세요] ${M+1}월 ${sel}일(${DOW[f.w]})은 ${ST[station].n}역에 공연으로 인한 혼잡이 예상되지 않아요.`;
+  const dateTxt = `${M+1}월 ${sel}일(${DOW[f.w]})`, stName = `${ST[station].n}역`;
+  let msg;
+  if(f.names.length){
+    msg = `[공연 피해가세요]\n${dateTxt} 오늘은 올림픽공원에 ${f.size==="대형"?"대형 ":""}공연이 있어요!\n\n`
+        + `${stName} 붐비는 시간: ${r.show.length?rng(r.show):"없음"}\n`
+        + (r.very.length ? `(특히 ${rng(r.very)}에는 매우 붐비니 가급적 피해주세요)\n` : "")
+        + `다니기 좋은 시간: ${r.calm.length?rng(r.calm):"-"}`
+        + (altTxt ? `\n\n※ 붐빌 때는 ${altTxt}을 이용해보세요!` : "");
+  } else {
+    const all = [...r.commute, ...r.show].sort((a,b)=>a-b);
+    msg = `[공연 피해가세요]\n${dateTxt}${noData(sel)?"은 기록이 없어 공연 여부를 확인할 수 없어요.":" 오늘은 올림픽공원에 공연이 없어요."}\n\n`
+        + `출퇴근 시간을 기준으로 붐비는 시간을 알려드릴게요.\n`
+        + `${stName} 붐비는 시간: ${all.length?rng(all):"없음"}\n`
+        + `다니기 좋은 시간: ${r.calm.length?rng(r.calm):"-"}`;
+  }
+  $("#bubble").textContent = msg;
 }
 
 function drawAgency(){
