@@ -83,7 +83,7 @@ select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6
 .sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
 .box{border-radius:12px;padding:14px;background:var(--soft)}
 .box h4{margin:0 0 4px;font-size:.88em;color:var(--ink2);font-weight:500}
-.box p{margin:0;font-size:1.18em;font-weight:700}
+.box p{margin:0;font-size:1.18em;font-weight:700;white-space:pre-line;line-height:1.45}
 .box.avoid p{color:var(--very)}.box.go p{color:var(--ok)}
 .alts{margin-top:14px}
 .alt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:8px 0}
@@ -277,6 +277,7 @@ const h12 = h => h === 12 || h === 24 ? 12 : h % 12;
 const tl = h => `${per(h)} ${h12(h)}시`;
 const span = (a, e) => per(a) === per(e) ? `${tl(a)}~${h12(e)}시` : `${tl(a)}~${tl(e)}`;
 const rng = hs => windows(hs).map(([a,b]) => span(a, b+1)).join(", ");
+const rngBr = hs => windows(hs).map(([a,b]) => span(a, b+1)).join("\n");
 const lines = st => ST[st].L.map(l => `<span class="line L${l}">${l}</span>`).join("");
 
 function analyze(type, size, st){
@@ -313,11 +314,11 @@ function drawForecast(){
   $("#fcShow").textContent = f.names.length ? `${f.size} 공연일 · ${f.names.length}건` : noData(sel) ? "자료 없음" : "공연 없음";
   $("#fcNames").innerHTML = f.names.map(n => `<li>${esc(n)}</li>`).join("");
   $("#strip").innerHTML = D.hours.map((h,i) => { const k = G[r.g[i]]; return `<div class="hr g${k}" role="listitem" aria-label="${h}시 ${r.g[i]}">${h}시<small>${r.g[i]==="매우 혼잡"?"매우 혼잡":r.g[i]}</small></div>`; }).join("");
-  $("#avoid").textContent = r.show.length ? rng(r.show) : "공연으로 붐비는 시간 없음";
-  $("#go").textContent = r.calm.length ? rng(r.calm) : "-";
+  $("#avoid").textContent = r.show.length ? rngBr(r.show) : "공연으로 붐비는 시간 없음";
+  $("#go").textContent = r.calm.length ? rngBr(r.calm) : "-";
   $("#commute").textContent = (noData(sel) ? "※ 이 날은 연계 데이터에 기록이 없어 공연 여부를 알 수 없습니다. 공연이 없다고 보고 낸 예보입니다. " : "") + (r.commute.length ? `※ ${rng(r.commute)}는 평소 출근 시간 혼잡입니다.` : "");
   const alt = [];
-  r.alts.filter(x => x.list.length).forEach(x => { const k = x.list.join("|"), m = alt.find(y => y.k === k); if(m) m.t += `, ${span(x.a, x.b+1)}`; else alt.push({k, t:span(x.a, x.b+1), list:x.list}); });
+  r.alts.filter(x => x.list.length).forEach(x => { const k = x.list.join("|"), m = alt.find(y => y.k === k); if(m) m.t += `<br>${span(x.a, x.b+1)}`; else alt.push({k, t:span(x.a, x.b+1), list:x.list}); });
   $("#alts").innerHTML = r.show.length ? `<h3>붐비는 시간에 이용할 만한 역</h3>` + (alt.length ? alt.map(x => `<p class="small muted" style="margin:10px 0 0">${x.t}</p><div class="alt-list">${x.list.map(s => `<div class="alt"><b>${lines(s)} ${esc(ST[s].n)}</b><span class="small muted">엘리베이터 ${ST[s].e}대<br>올림픽공원역에서 <span style="white-space:nowrap">약 ${ST[s].km}km</span></span></div>`).join("")}</div>`).join("") : `<p class="muted">이 시간에는 주변 역도 함께 붐빕니다. 가급적 이동을 미뤄 주세요.</p>`) + `<p class="tip">💡 더 가까운 역이 있다면, 혼잡한 ${esc(ST[station].n)}역 대신 그 역을 이용하세요.</p>` : "";
   const altTxt = alt.length ? alt[0].list.slice(0,2).map(s => `${ST[s].n}역(엘리베이터 ${ST[s].e}대)`).join(", ") : "";
   $("#smsWhen").textContent = `위 혼잡 예보에서 고른 ${M+1}월 ${sel}일 기준 예시 · 공연 전날 오후와 당일 아침 2번 보내드려요`;
@@ -333,8 +334,8 @@ function drawAgency(){
   const rows = days.map(d => {
     const f = info(d), r = analyze(f.type, f.size, HOME); veryH += r.very.length;
     const start = r.show.length ? Math.min(...r.show) : null;
-    const act = r.show.length ? `이동지원 차량은 ${tl(start)} 이전 배치 · 방문 일정은 ${r.calm.length?rng(r.calm):"오전"} 권장` : "공연 관련 혼잡 없음";
-    return `<tr><td class="nw" data-l="날짜">${M+1}월 ${d}일 (${DOW[f.w]})</td><td data-l="공연"><span class="pill ${f.size==="대형"?"g2":"g1"}">${f.size}</span> ${esc(f.names[0]||"")}${f.names.length>1?` 외 ${f.names.length-1}건`:""}</td><td class="nw" data-l="매우 혼잡">${r.very.length?rng(r.very):"없음"}</td><td data-l="권장 조치">${act}</td></tr>`;
+    const act = r.show.length ? `이동지원 차량은 ${tl(start)} 이전 배치 · 방문 일정은 ${r.calm.length?rng(r.calm).split(", ").join("<br>"):"오전"} 권장` : "공연 관련 혼잡 없음";
+    return `<tr><td class="nw" data-l="날짜">${M+1}월 ${d}일 (${DOW[f.w]})</td><td data-l="공연"><span class="pill ${f.size==="대형"?"g2":"g1"}">${f.size}</span> ${esc(f.names[0]||"")}${f.names.length>1?` 외 ${f.names.length-1}건`:""}</td><td class="nw" data-l="매우 혼잡">${r.very.length?rng(r.very).split(", ").join("<br>"):"없음"}</td><td data-l="권장 조치">${act}</td></tr>`;
   });
   $("#agTable tbody").innerHTML = rows.join("") || `<tr><td colspan="4" class="muted">이 달에는 공연이 없습니다.</td></tr>`;
   $("#agMonth").textContent = `${Y}년 ${M+1}월`;
